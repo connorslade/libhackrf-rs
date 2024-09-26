@@ -70,8 +70,8 @@ impl HackRf {
         }
     }
 
-    pub fn start_tx(&self, callback: TransferCallback) -> Result<()> {
-        let context = TransferContext::new(callback, self.clone());
+    pub fn start_tx(&self, callback: TransferCallback, user_data: *mut c_void) -> Result<()> {
+        let context = TransferContext::new(callback, self.clone(), user_data);
         let callback = Box::leak(Box::new(context)) as *mut _ as *mut _;
         self.ctx_tx.store(callback, Ordering::Relaxed);
 

@@ -21,9 +21,15 @@ fn main() -> Result<()> {
             .join("-")
     );
 
-    hackrf.start_tx(|_hackrf, buffer| {
-        println!("Buffer: {:?}", buffer.len());
-    })?;
+    let mut n = 0_usize;
+    hackrf.start_tx(
+        |_hackrf, _buffer, user| unsafe {
+            let user = user as *mut usize;
+            *user += 1;
+            println!("Callback: {}", *user);
+        },
+        &mut n as *mut _ as *mut std::ffi::c_void,
+    )?;
 
     let mut string = String::new();
     stdin().read_line(&mut string)?;
