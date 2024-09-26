@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 pub mod error;
-mod ffi;
+pub mod ffi;
 
 use error::{HackrfError, Result};
 use ffi::SerialNumber;
@@ -33,6 +33,34 @@ impl HackRf {
             ))?
         }
         Ok(serial_number)
+    }
+
+    pub fn set_freq(&self, freq: u64) -> Result<()> {
+        unsafe { HackrfError::from_id(ffi::hackrf_set_freq(self.device, freq)) }
+    }
+
+    pub fn set_sample_rate(&self, sample_rate: u32) -> Result<()> {
+        unsafe {
+            HackrfError::from_id(ffi::hackrf_set_sample_rate_manual(
+                self.device,
+                sample_rate,
+                1,
+            ))
+        }
+    }
+
+    pub fn start_tx(&self, callback: extern "C" fn(*mut ffi::HackrfTransfer) -> i32) -> Result<()> {
+        unsafe {
+            HackrfError::from_id(ffi::hackrf_start_tx(
+                self.device,
+                callback,
+                std::ptr::null_mut(),
+            ))
+        }
+    }
+
+    pub fn stop_tx(&self) -> Result<()> {
+        unsafe { HackrfError::from_id(ffi::hackrf_stop_tx(self.device)) }
     }
 }
 

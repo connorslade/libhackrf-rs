@@ -1,3 +1,5 @@
+#![allow(improper_ctypes)]
+
 use std::ffi::{c_char, c_double, c_int, c_uchar, c_uint, c_ulonglong, c_void};
 
 pub const BOARD_ID_JELLYBEAN: c_uchar = 0;
@@ -43,6 +45,7 @@ extern "C" {
         rx_ctx: *mut c_void,
     ) -> c_int;
     pub fn hackrf_stop_rx(device: *mut HackrfDevice) -> c_int;
+
     pub fn hackrf_start_tx(
         device: *mut HackrfDevice,
         callback: extern "C" fn(*mut HackrfTransfer) -> c_int,
