@@ -1,4 +1,5 @@
 use std::{
+    any::Any,
     ffi::c_void,
     ops::Deref,
     ptr,
@@ -70,8 +71,8 @@ impl HackRf {
         }
     }
 
-    pub fn start_tx(&self, callback: TransferCallback, user_data: *mut c_void) -> Result<()> {
-        let context = TransferContext::new(callback, self.clone(), user_data);
+    pub fn start_tx(&self, callback: TransferCallback, user_data: impl Any) -> Result<()> {
+        let context = TransferContext::new(callback, self.clone(), Box::new(user_data));
         let callback = Box::leak(Box::new(context)) as *mut _ as *mut _;
         self.ctx_tx.store(callback, Ordering::Relaxed);
 

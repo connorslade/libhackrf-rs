@@ -1,4 +1,4 @@
-use std::io::stdin;
+use std::{io::stdin, sync::atomic::AtomicUsize};
 
 use anyhow::Result;
 
@@ -21,14 +21,13 @@ fn main() -> Result<()> {
             .join("-")
     );
 
-    let mut n = 0_usize;
     hackrf.start_tx(
-        |_hackrf, _buffer, user| unsafe {
-            let user = user as *mut usize;
-            *user += 1;
-            println!("Callback: {}", *user);
+        |_hackrf, _buffer, user| {
+            let user = user.downcast_ref::<AtomicUsize>().unwrap();
+            let old = user.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            println!("Callback: {old}");
         },
-        &mut n as *mut _ as *mut std::ffi::c_void,
+        AtomicUsize::new(0),
     )?;
 
     let mut string = String::new();

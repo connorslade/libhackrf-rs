@@ -1,17 +1,17 @@
-use std::{ffi::c_void, slice};
+use std::{any::Any, slice};
 
 use super::{ffi, HackRf};
 
-pub type TransferCallback = fn(&HackRf, &mut [u8], *mut c_void);
+pub type TransferCallback = fn(&HackRf, &mut [u8], &dyn Any);
 
 pub struct TransferContext {
     callback: TransferCallback,
     hackrf: HackRf,
-    user_data: *mut c_void,
+    user_data: Box<dyn Any>,
 }
 
 impl TransferContext {
-    pub(super) fn new(callback: TransferCallback, hackrf: HackRf, user_data: *mut c_void) -> Self {
+    pub(super) fn new(callback: TransferCallback, hackrf: HackRf, user_data: Box<dyn Any>) -> Self {
         Self {
             callback,
             hackrf,
@@ -26,7 +26,7 @@ pub(super) extern "C" fn tx_callback(transfer: *mut ffi::HackrfTransfer) -> i32 
         let context = &*(transfer.tx_ctx as *mut TransferContext);
 
         let buffer = slice::from_raw_parts_mut(transfer.buffer, transfer.buffer_length as usize);
-        (context.callback)(&context.hackrf, buffer, context.user_data);
+        (context.callback)(&context.hackrf, buffer, &*context.user_data);
     }
 
     0
