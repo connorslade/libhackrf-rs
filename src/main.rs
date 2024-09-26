@@ -1,25 +1,21 @@
-use std::ptr;
+use anyhow::Result;
 
-use hackrf::{SerialNumber, HACKRF_SUCCESS};
-
+use hackrf::HackRf;
 mod hackrf;
 
-fn main() {
-    unsafe {
-        assert_eq!(hackrf::hackrf_init(), HACKRF_SUCCESS);
+fn main() -> Result<()> {
+    let hackrf = HackRf::open()?;
+    let serial_number = hackrf.get_serial_number()?;
 
-        let mut device = ptr::null_mut();
-        assert_eq!(hackrf::hackrf_open(&mut device), HACKRF_SUCCESS);
+    println!(
+        "Connected to: {}",
+        serial_number
+            .serial_no
+            .iter()
+            .map(|x| format!("{:08X}", x))
+            .collect::<Vec<_>>()
+            .join("-")
+    );
 
-        let mut serial_number = SerialNumber::default();
-        assert_eq!(
-            hackrf::hackrf_board_partid_serialno_read(device, &mut serial_number),
-            HACKRF_SUCCESS
-        );
-
-        println!(
-            "Part ID: {:08X}-{:08X}",
-            serial_number.part_id[0], serial_number.part_id[1]
-        );
-    }
+    Ok(())
 }

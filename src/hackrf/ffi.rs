@@ -1,18 +1,5 @@
 use std::ffi::{c_char, c_double, c_int, c_uchar, c_uint, c_ulonglong, c_void};
 
-pub const HACKRF_SUCCESS: c_int = 0;
-pub const HACKRF_TRUE: c_int = 1;
-pub const HACKRF_ERROR_INVALID_PARAM: c_int = -2;
-pub const HACKRF_ERROR_NOT_FOUND: c_int = -5;
-pub const HACKRF_ERROR_BUSY: c_int = -6;
-pub const HACKRF_ERROR_NO_MEM: c_int = -11;
-pub const HACKRF_ERROR_LIBUSB: c_int = -1000;
-pub const HACKRF_ERROR_THREAD: c_int = -1001;
-pub const HACKRF_ERROR_STREAMING_THREAD_ERR: c_int = -1002;
-pub const HACKRF_ERROR_STREAMING_STOPPED: c_int = -1003;
-pub const HACKRF_ERROR_STREAMING_EXIT_CALLED: c_int = -1004;
-pub const HACKRF_ERROR_OTHER: c_int = -9999;
-
 pub const BOARD_ID_JELLYBEAN: c_uchar = 0;
 pub const BOARD_ID_JAWBREAKER: c_uchar = 1;
 pub const BOARD_ID_HACKRF_ONE: c_uchar = 2;
@@ -22,7 +9,6 @@ pub const RF_PATH_FILTER_BYPASS: c_uint = 0;
 pub const RF_PATH_FILTER_LOW_PASS: c_uint = 1;
 pub const RF_PATH_FILTER_HIGH_PASS: c_uint = 2;
 
-#[allow(non_camel_case_types)]
 #[repr(C)]
 pub struct HackrfDevice;
 
