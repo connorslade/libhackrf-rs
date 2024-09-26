@@ -1,4 +1,4 @@
-use std::{io::stdin, thread};
+use std::io::stdin;
 
 use anyhow::Result;
 
@@ -21,19 +21,13 @@ fn main() -> Result<()> {
             .join("-")
     );
 
-    hackrf.start_tx(tx_callback)?;
+    hackrf.start_tx(|_hackrf, buffer| {
+        println!("Buffer: {:?}", buffer.len());
+    })?;
 
     let mut string = String::new();
     stdin().read_line(&mut string)?;
 
     hackrf.stop_tx()?;
     Ok(())
-}
-
-extern "C" fn tx_callback(transfer: *mut hackrf::ffi::HackrfTransfer) -> i32 {
-    unsafe {
-        println!("{}", (*transfer).valid_length);
-    }
-
-    0
 }

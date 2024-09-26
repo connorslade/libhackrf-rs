@@ -1,19 +1,35 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::{
+    ffi::c_void,
+    ops::Deref,
+    ptr,
+    sync::{
+        atomic::{AtomicPtr, AtomicUsize, Ordering},
+        Arc,
+    },
+};
 
 pub mod error;
-pub mod ffi;
+mod ffi;
+mod transfer;
 
 use error::{HackrfError, Result};
 use ffi::SerialNumber;
+use transfer::{tx_callback, TransferCallback, TransferContext};
 
 static DEVICE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
+#[derive(Clone)]
 pub struct HackRf {
+    inner: Arc<HackRfInner>,
+}
+
+pub struct HackRfInner {
     device: *mut ffi::HackrfDevice,
+    ctx_tx: AtomicPtr<c_void>,
 }
 
 impl HackRf {
-    pub fn open() -> Result<Self> {
+    pub fn open() -> Result<HackRf> {
         if DEVICE_COUNT.fetch_add(1, Ordering::Relaxed) == 0 {
             unsafe { HackrfError::from_id(ffi::hackrf_init())? }
         }
@@ -21,7 +37,12 @@ impl HackRf {
         let mut device = std::ptr::null_mut();
         unsafe { HackrfError::from_id(ffi::hackrf_open(&mut device))? }
 
-        Ok(Self { device })
+        Ok(Self {
+            inner: Arc::new(HackRfInner {
+                device,
+                ctx_tx: AtomicPtr::new(ptr::null_mut()),
+            }),
+        })
     }
 
     pub fn get_serial_number(&self) -> Result<SerialNumber> {
@@ -49,18 +70,33 @@ impl HackRf {
         }
     }
 
-    pub fn start_tx(&self, callback: extern "C" fn(*mut ffi::HackrfTransfer) -> i32) -> Result<()> {
-        unsafe {
-            HackrfError::from_id(ffi::hackrf_start_tx(
-                self.device,
-                callback,
-                std::ptr::null_mut(),
-            ))
-        }
+    pub fn start_tx(&self, callback: TransferCallback) -> Result<()> {
+        let context = TransferContext::new(callback, self.clone());
+        let callback = Box::leak(Box::new(context)) as *mut _ as *mut _;
+        self.ctx_tx.store(callback, Ordering::Relaxed);
+
+        unsafe { HackrfError::from_id(ffi::hackrf_start_tx(self.device, tx_callback, callback)) }
     }
 
     pub fn stop_tx(&self) -> Result<()> {
+        let callback = self.ctx_tx.swap(ptr::null_mut(), Ordering::Relaxed);
+        if !callback.is_null() {
+            let callback = unsafe { Box::from_raw(callback as *mut fn(*mut ffi::HackrfTransfer)) };
+            drop(callback);
+        }
+
         unsafe { HackrfError::from_id(ffi::hackrf_stop_tx(self.device)) }
+    }
+}
+
+unsafe impl Send for HackRfInner {}
+unsafe impl Sync for HackRfInner {}
+
+impl Deref for HackRf {
+    type Target = HackRfInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }
 
