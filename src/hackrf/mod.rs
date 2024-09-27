@@ -71,6 +71,11 @@ impl HackRf {
         }
     }
 
+    /// Between 0db and 47db.
+    pub fn set_transmit_gain(&self, gain: u32) -> Result<()> {
+        unsafe { HackrfError::from_id(ffi::hackrf_set_txvga_gain(self.device, gain)) }
+    }
+
     pub fn start_tx(&self, callback: TransferCallback, user_data: impl Any) -> Result<()> {
         let context = TransferContext::new(callback, self.clone(), Box::new(user_data));
         let callback = Box::leak(Box::new(context)) as *mut _ as *mut _;
@@ -87,6 +92,10 @@ impl HackRf {
         }
 
         unsafe { HackrfError::from_id(ffi::hackrf_stop_tx(self.device)) }
+    }
+
+    pub fn is_streaming(&self) -> bool {
+        unsafe { ffi::hackrf_is_streaming(self.device) != 0 }
     }
 }
 
