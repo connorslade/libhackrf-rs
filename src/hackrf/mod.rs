@@ -15,7 +15,7 @@ mod transfer;
 
 use error::{HackrfError, Result};
 use ffi::SerialNumber;
-use transfer::{tx_callback, TransferCallback, TransferContext};
+use transfer::{rx_callback, tx_callback, ReceiveCallback, TransferContext, TransmitCallback};
 
 static DEVICE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -26,7 +26,7 @@ pub struct HackRf {
 
 pub struct HackRfInner {
     device: *mut ffi::HackrfDevice,
-    ctx_tx: AtomicPtr<c_void>,
+    user_data: AtomicPtr<c_void>,
 }
 
 impl HackRf {
@@ -41,7 +41,7 @@ impl HackRf {
         Ok(Self {
             inner: Arc::new(HackRfInner {
                 device,
-                ctx_tx: AtomicPtr::new(ptr::null_mut()),
+                user_data: AtomicPtr::new(ptr::null_mut()),
             }),
         })
     }
@@ -71,27 +71,61 @@ impl HackRf {
         }
     }
 
+    pub fn set_amp_enable(&self, enable: bool) -> Result<()> {
+        unsafe { HackrfError::from_id(ffi::hackrf_set_amp_enable(self.device, enable as u8)) }
+    }
+
     /// Between 0db and 47db.
     pub fn set_transmit_gain(&self, gain: u32) -> Result<()> {
         unsafe { HackrfError::from_id(ffi::hackrf_set_txvga_gain(self.device, gain)) }
     }
 
-    pub fn start_tx(&self, callback: TransferCallback, user_data: impl Any) -> Result<()> {
+    /// Low noise amplifier gain.
+    /// Between 0d and 40d in steps of 8dB.
+    pub fn set_lna_gain(&self, gain: u32) -> Result<()> {
+        unsafe { HackrfError::from_id(ffi::hackrf_set_lna_gain(self.device, gain)) }
+    }
+
+    /// Variable gain amplifier gain.
+    /// Between 0db and 62db in steps of 2dB.
+    pub fn set_gain(&self, gain: u32) -> Result<()> {
+        unsafe { HackrfError::from_id(ffi::hackrf_set_vga_gain(self.device, gain)) }
+    }
+
+    pub fn start_tx(&self, callback: TransmitCallback, user_data: impl Any) -> Result<()> {
         let context = TransferContext::new(callback, self.clone(), Box::new(user_data));
         let callback = Box::leak(Box::new(context)) as *mut _ as *mut _;
-        self.ctx_tx.store(callback, Ordering::Relaxed);
+        self.user_data.store(callback, Ordering::Relaxed);
 
         unsafe { HackrfError::from_id(ffi::hackrf_start_tx(self.device, tx_callback, callback)) }
     }
 
     pub fn stop_tx(&self) -> Result<()> {
-        let callback = self.ctx_tx.swap(ptr::null_mut(), Ordering::Relaxed);
+        let callback = self.user_data.swap(ptr::null_mut(), Ordering::Relaxed);
         if !callback.is_null() {
             let callback = unsafe { Box::from_raw(callback as *mut fn(*mut ffi::HackrfTransfer)) };
             drop(callback);
         }
 
         unsafe { HackrfError::from_id(ffi::hackrf_stop_tx(self.device)) }
+    }
+
+    pub fn start_rx(&self, callback: ReceiveCallback, user_data: impl Any) -> Result<()> {
+        let context = TransferContext::new(callback, self.clone(), Box::new(user_data));
+        let callback = Box::leak(Box::new(context)) as *mut _ as *mut _;
+        self.user_data.store(callback, Ordering::Relaxed);
+
+        unsafe { HackrfError::from_id(ffi::hackrf_start_rx(self.device, rx_callback, callback)) }
+    }
+
+    pub fn stop_rx(&self) -> Result<()> {
+        let callback = self.user_data.swap(ptr::null_mut(), Ordering::Relaxed);
+        if !callback.is_null() {
+            let callback = unsafe { Box::from_raw(callback as *mut fn(*mut ffi::HackrfTransfer)) };
+            drop(callback);
+        }
+
+        unsafe { HackrfError::from_id(ffi::hackrf_stop_rx(self.device)) }
     }
 
     pub fn is_streaming(&self) -> bool {

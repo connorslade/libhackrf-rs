@@ -53,7 +53,6 @@ extern "C" {
     ) -> c_int;
     pub fn hackrf_stop_tx(device: *mut HackrfDevice) -> c_int;
 
-    // Returns HACKRF_TRUE=1 if success
     pub fn hackrf_is_streaming(device: *mut HackrfDevice) -> c_int;
 
     pub fn hackrf_set_baseband_filter_bandwidth(
@@ -94,11 +93,8 @@ extern "C" {
     // External amp, bool on/off
     pub fn hackrf_set_amp_enable(device: *mut HackrfDevice, value: c_uchar) -> c_int;
 
-    // Range 0-40 step 8dB
     pub fn hackrf_set_lna_gain(device: *mut HackrfDevice, value: c_uint) -> c_int;
-    // Range 0-62 step 2dB
     pub fn hackrf_set_vga_gain(device: *mut HackrfDevice, value: c_uint) -> c_int;
-    // Range 0-47 step 1dB
     pub fn hackrf_set_txvga_gain(device: *mut HackrfDevice, value: c_uint) -> c_int;
 
     // Antenna port power control
@@ -112,5 +108,4 @@ extern "C" {
     pub fn hackrf_compute_baseband_filter_bw_round_down_lt(bandwidth_hz: c_uint) -> c_uint;
     // Compute best default value depending on sample rate (auto filter)
     pub fn hackrf_compute_baseband_filter_bw(bandwidth_hz: c_uint) -> c_uint;
-
 }
