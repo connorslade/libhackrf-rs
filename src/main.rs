@@ -1,15 +1,25 @@
-use std::{io::stdin, sync::atomic::AtomicU64};
+use std::{cell::RefCell, io::stdin, rc::Rc};
 
 use anyhow::Result;
+use consts::{SAMPLE_RATE, WAVE_SPEC};
+use hound::WavWriter;
+use num_complex::Complex;
 
-use hackrf::HackRf;
+mod consts;
+mod filters;
 mod hackrf;
+mod signal;
+use hackrf::HackRf;
+use signal::demodulate::Demodulator;
 
 fn main() -> Result<()> {
     let hackrf = HackRf::open()?;
-    hackrf.set_sample_rate(8_000_000)?;
+    hackrf.set_sample_rate(SAMPLE_RATE)?;
     hackrf.set_freq(100_000_000)?;
-    hackrf.set_transmit_gain(10)?;
+
+    hackrf.set_amp_enable(true)?;
+    hackrf.set_lna_gain(32)?;
+    hackrf.set_rxvga_gain(0)?;
 
     let serial_number = hackrf.get_serial_number()?;
     println!(
@@ -22,33 +32,35 @@ fn main() -> Result<()> {
             .join("-")
     );
 
-    hackrf.start_tx(
+    let audio = Rc::new(RefCell::new((Demodulator::new(), Vec::<f32>::new())));
+    hackrf.start_rx(
         |_hackrf, buffer, user| {
-            let now = user.downcast_ref::<AtomicU64>().unwrap();
-            let n = now.load(std::sync::atomic::Ordering::Relaxed);
+            let data = user
+                .downcast_ref::<Rc<RefCell<(Demodulator, Vec<f32>)>>>()
+                .unwrap();
+            let mut data = data.borrow_mut();
 
-            let sample_rate = 8_000_000;
-            let center_freq = 1_000_000;
+            let samples = buffer
+                .iter()
+                .map(|x| Complex::new(x.re as f32 / 127.0, x.im as f32 / 127.0))
+                .collect::<Vec<_>>();
 
-            let mut next = 0;
-            for (idx, iq) in buffer.chunks_mut(2).enumerate() {
-                let t = (n + idx as u64) as f64 / sample_rate as f64;
-                let carrier_signal = (2.0 * std::f64::consts::PI * center_freq as f64 * t).sin();
-
-                iq[0] = unsafe { std::mem::transmute((carrier_signal * 127.0 + 127.0) as i8) };
-                iq[1] = 0;
-
-                next += 1;
-            }
-
-            now.store(next, std::sync::atomic::Ordering::Relaxed);
+            data.0.replace(samples);
+            let audio = data.0.audio(-900e3, 1.0);
+            data.1.extend_from_slice(&audio);
         },
-        AtomicU64::new(0),
+        audio.clone(),
     )?;
 
     let mut string = String::new();
     stdin().read_line(&mut string)?;
-
     hackrf.stop_tx()?;
+
+    let mut writer = WavWriter::create("output.wav", WAVE_SPEC)?;
+    for sample in audio.borrow().1.iter() {
+        writer.write_sample(*sample)?;
+    }
+    writer.finalize()?;
+
     Ok(())
 }

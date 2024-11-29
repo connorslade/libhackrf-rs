@@ -86,6 +86,14 @@ impl HackRf {
         unsafe { HackrfError::from_id(ffi::hackrf_set_lna_gain(self.device, gain)) }
     }
 
+    pub fn set_rxvga_gain(&self, gain: u32) -> Result<()> {
+        unsafe { HackrfError::from_id(ffi::hackrf_set_vga_gain(self.device, gain)) }
+    }
+
+    pub fn set_txvga_gain(&self, gain: u32) -> Result<()> {
+        unsafe { HackrfError::from_id(ffi::hackrf_set_txvga_gain(self.device, gain)) }
+    }
+
     /// Variable gain amplifier gain.
     /// Between 0db and 62db in steps of 2dB.
     pub fn set_gain(&self, gain: u32) -> Result<()> {
