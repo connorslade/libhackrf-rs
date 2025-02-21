@@ -25,10 +25,18 @@ name = "fm_transmit"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "hackrf",
  "hound",
  "itertools",
  "num-complex",
  "num-traits",
+]
+
+[[package]]
+name = "hackrf"
+version = "0.1.0"
+dependencies = [
+ "num-complex",
 ]
 
 [[package]]

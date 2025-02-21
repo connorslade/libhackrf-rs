@@ -5,13 +5,12 @@ use std::{
 
 use anyhow::Result;
 use consts::{SAMPLE_RATE, TX_BANDWIDTH};
+use hackrf::{util::ToComplexI8, HackRf};
 use hound::WavReader;
 
 mod consts;
 mod filters;
-pub mod hackrf;
 mod signal;
-use hackrf::{util::ToComplexI8, HackRf};
 use signal::modulate::Modulator;
 
 fn main() -> Result<()> {

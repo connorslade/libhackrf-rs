@@ -1,0 +1,13 @@
+[package]
+name = "fm_transmit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hackrf = { path = "../hackrf" }
+
+anyhow = "1.0.89"
+hound = "3.5.1"
+itertools = "0.13.0"
+num-complex = "0.4.6"
+num-traits = "0.2.19"
