@@ -1,4 +1,4 @@
-use std::{f32::consts::TAU, fs::File, io::BufReader, iter};
+use std::{f32::consts::TAU, fs::File, io::BufReader};
 
 use hound::{SampleFormat, WavReader};
 use num_complex::Complex;

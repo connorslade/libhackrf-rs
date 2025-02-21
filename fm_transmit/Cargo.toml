@@ -7,6 +7,7 @@ edition = "2021"
 libhackrf = { path = ".." }
 
 anyhow = "1.0.89"
+clap = { version = "4.5.30", features = ["derive"] }
 hound = "3.5.1"
 itertools = "0.13.0"
 num-complex = "0.4.6"
