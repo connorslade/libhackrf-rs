@@ -3,15 +3,17 @@
 use std::{
     any::Any,
     ffi::c_void,
-    ptr,
+    mem, ptr,
     sync::{
         atomic::{AtomicPtr, AtomicUsize, Ordering},
         Arc,
     },
 };
 
+mod enums;
 pub mod error;
 pub mod ffi;
+pub use enums::DeviceType;
 mod transfer;
 pub mod util;
 
@@ -67,6 +69,34 @@ impl HackRf {
             ))?
         }
         Ok(serial_number)
+    }
+
+    /// Read hackrf_board_id from a device and convert it to a DeviceType.
+    pub fn get_device_type(&self) -> Result<DeviceType> {
+        let mut value = 0;
+        unsafe { HackrfError::from_id(ffi::hackrf_board_id_read(self.device(), &mut value)) }?;
+        Ok(DeviceType::from_id(value))
+    }
+
+    /// Read HackRF firmware version as a string.
+    pub fn version(&self) -> String {
+        let mut version = vec![0; 32];
+
+        unsafe {
+            ffi::hackrf_version_string_read(
+                self.device(),
+                version.as_mut_ptr(),
+                version.len() as u8,
+            );
+        }
+
+        let end = version
+            .iter()
+            .position(|&x| x == 0)
+            .unwrap_or(version.len());
+
+        let version = unsafe { mem::transmute::<&[i8], &[u8]>(&version.as_slice()[..end]) };
+        String::from_utf8_lossy(version).into_owned()
     }
 
     /// Sets the center frequency in Hz.
