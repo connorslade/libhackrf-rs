@@ -12,6 +12,7 @@ use std::{
 pub mod error;
 mod ffi;
 mod transfer;
+pub mod util;
 
 use error::{HackrfError, Result};
 use ffi::SerialNumber;
@@ -100,6 +101,15 @@ impl HackRf {
         unsafe { HackrfError::from_id(ffi::hackrf_set_vga_gain(self.device, gain)) }
     }
 
+    pub fn set_baseband_filter_bandwidth(&self, bandwidth_hz: u32) -> Result<()> {
+        unsafe {
+            HackrfError::from_id(ffi::hackrf_set_baseband_filter_bandwidth(
+                self.device,
+                ffi::hackrf_compute_baseband_filter_bw(bandwidth_hz),
+            ))
+        }
+    }
+
     pub fn start_tx(&self, callback: TransmitCallback, user_data: impl Any) -> Result<()> {
         let context = TransferContext::new(callback, self.clone(), Box::new(user_data));
         let callback = Box::leak(Box::new(context)) as *mut _ as *mut _;
@@ -118,7 +128,7 @@ impl HackRf {
         unsafe { HackrfError::from_id(ffi::hackrf_stop_tx(self.device)) }
     }
 
-    pub fn start_rx(&self, callback: ReceiveCallback, user_data: impl Any) -> Result<()> {
+    pub fn start_rx(&self, callback: ReceiveCallback, user_data: impl Any + Sync) -> Result<()> {
         let context = TransferContext::new(callback, self.clone(), Box::new(user_data));
         let callback = Box::leak(Box::new(context)) as *mut _ as *mut _;
         self.user_data.store(callback, Ordering::Relaxed);

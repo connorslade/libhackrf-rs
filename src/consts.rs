@@ -1,6 +1,7 @@
 use hound::{SampleFormat, WavSpec};
 
 pub const SAMPLE_RATE: u32 = 2_000_000;
+pub const TX_BANDWIDTH: f32 = 19_000.0;
 
 pub const IQ_CUTOFF_FREQ: f32 = 200_000.0;
 pub const AUDIO_CUTOFF_FREQ: f32 = 22_000.0;

@@ -1,16 +1,18 @@
-use std::{cell::RefCell, io::stdin, rc::Rc};
+use std::{
+    io::{stdout, Write},
+    sync::{Arc, Mutex},
+};
 
 use anyhow::Result;
-use consts::{SAMPLE_RATE, WAVE_SPEC};
-use hound::WavWriter;
-use num_complex::Complex;
+use consts::{SAMPLE_RATE, TX_BANDWIDTH};
+use hound::WavReader;
 
 mod consts;
 mod filters;
-mod hackrf;
+pub mod hackrf;
 mod signal;
-use hackrf::HackRf;
-use signal::demodulate::Demodulator;
+use hackrf::{util::ToComplexI8, HackRf};
+use signal::modulate::Modulator;
 
 fn main() -> Result<()> {
     let hackrf = HackRf::open()?;
@@ -18,12 +20,12 @@ fn main() -> Result<()> {
     hackrf.set_freq(100_000_000)?;
 
     hackrf.set_amp_enable(true)?;
-    hackrf.set_lna_gain(32)?;
-    hackrf.set_rxvga_gain(0)?;
+    hackrf.set_transmit_gain(20)?;
+    hackrf.set_baseband_filter_bandwidth(SAMPLE_RATE)?;
 
     let serial_number = hackrf.get_serial_number()?;
     println!(
-        "Connected to: {}",
+        "Connected to: {}\n",
         serial_number
             .serial_no
             .iter()
@@ -32,35 +34,29 @@ fn main() -> Result<()> {
             .join("-")
     );
 
-    let audio = Rc::new(RefCell::new((Demodulator::new(), Vec::<f32>::new())));
-    hackrf.start_rx(
+    let wav = WavReader::open("/home/connorslade/Downloads/taxi-f32.wav").unwrap();
+    let audio = Arc::new(Mutex::new(Modulator::new(SAMPLE_RATE, TX_BANDWIDTH, wav)));
+    hackrf.start_tx(
         |_hackrf, buffer, user| {
-            let data = user
-                .downcast_ref::<Rc<RefCell<(Demodulator, Vec<f32>)>>>()
-                .unwrap();
-            let mut data = data.borrow_mut();
+            let data = user.downcast_ref::<Arc<Mutex<Modulator>>>().unwrap();
+            let mut data = data.lock().unwrap();
 
-            let samples = buffer
-                .iter()
-                .map(|x| Complex::new(x.re as f32 / 127.0, x.im as f32 / 127.0))
-                .collect::<Vec<_>>();
-
-            data.0.replace(samples);
-            let audio = data.0.audio(-900e3, 1.0);
-            data.1.extend_from_slice(&audio);
+            buffer.iter_mut().for_each(|x| *x = data.sample().to_i8());
         },
         audio.clone(),
     )?;
 
-    let mut string = String::new();
-    stdin().read_line(&mut string)?;
-    hackrf.stop_tx()?;
+    loop {
+        let progress = audio.lock().unwrap().progress();
+        print!("\rTransmitting: {:.2}%", progress * 100.0);
+        stdout().flush().unwrap();
 
-    let mut writer = WavWriter::create("output.wav", WAVE_SPEC)?;
-    for sample in audio.borrow().1.iter() {
-        writer.write_sample(*sample)?;
+        if progress == 1.0 {
+            break;
+        }
     }
-    writer.finalize()?;
+
+    hackrf.stop_tx()?;
 
     Ok(())
 }
