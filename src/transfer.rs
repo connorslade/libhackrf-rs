@@ -4,8 +4,8 @@ use num_complex::Complex;
 
 use super::{ffi, HackRf};
 
-pub type TransmitCallback = fn(&HackRf, &mut [Complex<i8>], &dyn Any);
-pub type ReceiveCallback = fn(&HackRf, &[Complex<i8>], &dyn Any);
+pub type TransmitCallback = fn(hack_rf: &HackRf, samples: &mut [Complex<i8>], user: &dyn Any);
+pub type ReceiveCallback = fn(hack_rf: &HackRf, samples: &[Complex<i8>], user: &dyn Any);
 
 pub struct TransferContext<Callback> {
     callback: Callback,
