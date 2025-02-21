@@ -1,6 +1,6 @@
 # libhackrf-rs
 
-A *modern* [libhackrf](https://github.com/greatscottgadgets/hackrf/blob/71bc3940886a234ca119df9b15e24c9dcda7cb4d/host/libhackrf/src/hackrf.h) library wrapper that supports receiving and *transmitting*.
+A *modern* [libhackrf](https://github.com/greatscottgadgets/hackrf) wrapper that supports receiving and *transmitting*.
 
 ## Example
 

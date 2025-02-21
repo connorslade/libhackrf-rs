@@ -3,6 +3,16 @@ name = "libhackrf"
 version = "0.1.0"
 edition = "2021"
 
+authors = ["Connor Slade <connor@connorcode.com>"]
+categories = ["api-bindings"]
+description = "A modern libhackrf wrapper that supports receiving and transmitting."
+documentation = "https://docs.rs/libhackrf"
+exclude = ["fm_transmit"]
+keywords = ["hackrf"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/connorslade/libhackrf-rs"
+
 [lib]
 doctest = false
 
