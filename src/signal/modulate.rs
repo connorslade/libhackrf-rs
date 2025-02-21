@@ -1,4 +1,4 @@
-use std::{f32::consts::TAU, fs::File, io::BufReader};
+use std::{f32::consts::TAU, fs::File, io::BufReader, iter};
 
 use hound::WavReader;
 use num_complex::Complex;
@@ -6,53 +6,70 @@ use num_complex::Complex;
 type Wav = WavReader<BufReader<File>>;
 
 pub struct Modulator {
-    wav: Wav,
-
+    samples: Box<dyn Iterator<Item = f32>>,
+    audio_sample_rate: u32,
+    audio_samples: u32,
     sample_rate: u64,
     bandwidth: f32,
 
     i: u64,
-    sample: f32,
     phase: f32,
+    sample: f32,
+    next_sample: f32,
 }
 
 impl Modulator {
     pub fn new(sample_rate: u32, bandwidth: f32, wav: Wav) -> Self {
-        assert!(sample_rate >= wav.spec().sample_rate);
+        let audio_sample_rate = wav.spec().sample_rate;
+        let audio_samples = wav.duration();
+        let channels = wav.spec().channels;
+
+        assert!(sample_rate >= audio_sample_rate);
+
+        let samples = wav
+            .into_samples()
+            .map(|x| x.unwrap())
+            .step_by(channels as usize);
 
         Self {
-            wav,
+            samples: Box::new(samples),
+            audio_sample_rate,
+            audio_samples,
             sample_rate: sample_rate as _,
             bandwidth,
 
             i: 0,
-            sample: 0.0,
             phase: 0.0,
+            sample: 0.0,
+            next_sample: 0.0,
         }
     }
 
     pub fn progress(&self) -> f32 {
-        let t = (self.i / self.sample_rate) as f32 * self.wav.spec().sample_rate as f32
-            / self.wav.duration() as f32;
+        let t = (self.i / self.sample_rate) as f32 * self.audio_sample_rate as f32
+            / self.audio_samples as f32;
         t.min(1.0)
     }
 
     pub fn sample(&mut self) -> Complex<f32> {
-        let spec = self.wav.spec();
-        let rate = self.sample_rate / spec.sample_rate as u64;
+        let rate = self.sample_rate / self.audio_sample_rate as u64;
 
         let sample = self.i % rate;
         if sample == 0 {
-            let channels = spec.channels;
-            let mut iter = self.wav.samples().step_by(channels as usize);
-            self.sample = iter.next().unwrap().unwrap();
+            self.sample = self.next_sample;
+            self.next_sample = self.samples.next().unwrap_or_default();
         }
 
         self.i += 1;
 
-        let deviation = self.sample * self.bandwidth;
+        let t = sample as f32 / rate as f32;
+        let deviation = lerp(self.sample, self.next_sample, t) * self.bandwidth;
         self.phase += TAU * deviation / self.sample_rate as f32;
 
         (Complex::i() * self.phase).exp()
     }
+}
+
+fn lerp(a: f32, b: f32, t: f32) -> f32 {
+    a + (b - a) * t
 }

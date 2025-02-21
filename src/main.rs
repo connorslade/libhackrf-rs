@@ -20,7 +20,7 @@ fn main() -> Result<()> {
     hackrf.set_freq(100_000_000)?;
 
     hackrf.set_amp_enable(true)?;
-    hackrf.set_transmit_gain(20)?;
+    hackrf.set_transmit_gain(30)?;
     hackrf.set_baseband_filter_bandwidth(SAMPLE_RATE)?;
 
     let serial_number = hackrf.get_serial_number()?;
