@@ -72,13 +72,9 @@ impl HackRf {
         }
     }
 
+    /// Sets the state of the externial amplifier
     pub fn set_amp_enable(&self, enable: bool) -> Result<()> {
         unsafe { HackrfError::from_id(ffi::hackrf_set_amp_enable(self.device, enable as u8)) }
-    }
-
-    /// Between 0db and 47db.
-    pub fn set_transmit_gain(&self, gain: u32) -> Result<()> {
-        unsafe { HackrfError::from_id(ffi::hackrf_set_txvga_gain(self.device, gain)) }
     }
 
     /// Low noise amplifier gain.
@@ -87,18 +83,14 @@ impl HackRf {
         unsafe { HackrfError::from_id(ffi::hackrf_set_lna_gain(self.device, gain)) }
     }
 
+    /// Variable gain amplifier gain. Between 0db and 62db in steps of 2dB.
     pub fn set_rxvga_gain(&self, gain: u32) -> Result<()> {
         unsafe { HackrfError::from_id(ffi::hackrf_set_vga_gain(self.device, gain)) }
     }
 
+    /// Between 0db and 47db.
     pub fn set_txvga_gain(&self, gain: u32) -> Result<()> {
         unsafe { HackrfError::from_id(ffi::hackrf_set_txvga_gain(self.device, gain)) }
-    }
-
-    /// Variable gain amplifier gain.
-    /// Between 0db and 62db in steps of 2dB.
-    pub fn set_gain(&self, gain: u32) -> Result<()> {
-        unsafe { HackrfError::from_id(ffi::hackrf_set_vga_gain(self.device, gain)) }
     }
 
     pub fn set_baseband_filter_bandwidth(&self, bandwidth_hz: u32) -> Result<()> {

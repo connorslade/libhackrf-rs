@@ -18,10 +18,7 @@ fn main() -> Result<()> {
     let hackrf = HackRf::open()?;
     hackrf.set_sample_rate(SAMPLE_RATE)?;
     hackrf.set_freq(100_000_000)?;
-
-    hackrf.set_amp_enable(true)?;
-    hackrf.set_transmit_gain(30)?;
-    hackrf.set_baseband_filter_bandwidth(SAMPLE_RATE)?;
+    hackrf.set_txvga_gain(30)?;
 
     let serial_number = hackrf.get_serial_number()?;
     println!(
