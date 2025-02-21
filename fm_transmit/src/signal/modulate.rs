@@ -1,6 +1,6 @@
 use std::{f32::consts::TAU, fs::File, io::BufReader, iter};
 
-use hound::WavReader;
+use hound::{SampleFormat, WavReader};
 use num_complex::Complex;
 
 type Wav = WavReader<BufReader<File>>;
@@ -26,13 +26,24 @@ impl Modulator {
 
         assert!(sample_rate >= audio_sample_rate);
 
-        let samples = wav
-            .into_samples()
-            .map(|x| x.unwrap())
-            .step_by(channels as usize);
+        let samples: Box<dyn Iterator<Item = f32>> = match wav.spec().sample_format {
+            SampleFormat::Float => Box::new(
+                wav.into_samples::<f32>()
+                    .map(|x| x.unwrap())
+                    .step_by(channels as usize),
+            ),
+            SampleFormat::Int => {
+                let max = (1u32 << (wav.spec().bits_per_sample - 1)) as f32;
+                Box::new(
+                    wav.into_samples::<i32>()
+                        .map(move |x| x.unwrap() as f32 / max)
+                        .step_by(channels as usize),
+                )
+            }
+        };
 
         Self {
-            samples: Box::new(samples),
+            samples,
             audio_sample_rate,
             audio_samples,
             sample_rate: sample_rate as _,

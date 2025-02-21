@@ -5,8 +5,8 @@ use std::{
 
 use anyhow::Result;
 use consts::{SAMPLE_RATE, TX_BANDWIDTH};
-use hackrf::{util::ToComplexI8, HackRf};
 use hound::WavReader;
+use libhackrf::{util::ToComplexI8, HackRf};
 
 mod consts;
 mod filters;
@@ -30,7 +30,7 @@ fn main() -> Result<()> {
             .join("-")
     );
 
-    let wav = WavReader::open("/home/connorslade/Downloads/taxi-f32.wav").unwrap();
+    let wav = WavReader::open("/home/connorslade/Downloads/talk-talk.wav").unwrap();
     let audio = Arc::new(Mutex::new(Modulator::new(SAMPLE_RATE, TX_BANDWIDTH, wav)));
     hackrf.start_tx(
         |_hackrf, buffer, user| {

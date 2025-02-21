@@ -1,3 +1,11 @@
+[package]
+name = "libhackrf"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+num-complex = "0.4.6"
+
 [workspace]
 resolver = "2"
-members = ["fm_transmit", "hackrf"]
+members = ["fm_transmit"]

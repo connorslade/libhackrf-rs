@@ -10,7 +10,7 @@ use std::{
 };
 
 pub mod error;
-mod ffi;
+pub mod ffi;
 mod transfer;
 pub mod util;
 
@@ -45,6 +45,10 @@ impl HackRf {
                 user_data: AtomicPtr::new(ptr::null_mut()),
             }),
         })
+    }
+
+    pub fn as_raw(&self) -> *mut ffi::HackrfDevice {
+        self.device
     }
 
     pub fn get_serial_number(&self) -> Result<SerialNumber> {

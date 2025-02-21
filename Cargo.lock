@@ -25,18 +25,11 @@ name = "fm_transmit"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "hackrf",
  "hound",
  "itertools",
+ "libhackrf",
  "num-complex",
  "num-traits",
-]
-
-[[package]]
-name = "hackrf"
-version = "0.1.0"
-dependencies = [
- "num-complex",
 ]
 
 [[package]]
@@ -52,6 +45,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
+]
+
+[[package]]
+name = "libhackrf"
+version = "0.1.0"
+dependencies = [
+ "num-complex",
 ]
 
 [[package]]
